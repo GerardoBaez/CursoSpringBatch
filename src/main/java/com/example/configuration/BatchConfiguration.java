@@ -28,7 +28,7 @@ public class BatchConfiguration {
 	
 	
 	@Bean 
-	public Step firstStep() {
+	public Step step1() {
 		return this.stepBiulderFactory.get("step1").tasklet(new Tasklet(){
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
@@ -39,9 +39,33 @@ public class BatchConfiguration {
 	}
 	
 	@Bean 
+	public Step step2() {
+		return this.stepBiulderFactory.get("step2").tasklet(new Tasklet(){
+			@Override
+			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+				log.info("step2 executed!!");
+				return RepeatStatus.FINISHED;
+			}
+		}).build();
+	}
+	
+	@Bean 
+	public Step step3() {
+		return this.stepBiulderFactory.get("step3").tasklet(new Tasklet(){
+			@Override
+			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+				log.info("step3 executed!!");
+				return RepeatStatus.FINISHED;
+			}
+		}).build();
+	}
+	
+	@Bean 
 	public Job firstJob() {
 		return this.jobBiulderFactory.get("job1")
-		.start(firstStep())
+		.start(step1())
+		.next(step2())
+		.next(step3())
 		.build();
 	}
 	
