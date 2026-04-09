@@ -43,6 +43,10 @@ public class BatchConfiguration {
 		return this.stepBiulderFactory.get("step2").tasklet(new Tasklet(){
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+				boolean fail= false;
+				if(fail) {
+				 throw new Exception("Test Exception");			
+				}	
 				log.info("step2 executed!!");
 				return RepeatStatus.FINISHED;
 			}
