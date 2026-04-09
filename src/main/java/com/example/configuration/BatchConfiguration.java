@@ -67,9 +67,9 @@ public class BatchConfiguration {
 	@Bean 
 	public Job firstJob() {
 		return this.jobBiulderFactory.get("job1")
-		.start(step1())
-		.next(step2())
-		.next(step3())
+		.start(step1()).on("COMPLETED").to(step2())
+		.from(step2()).on("COMPLETED").to(step3())
+		.end()
 		.build();
 	}
 	
