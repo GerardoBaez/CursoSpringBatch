@@ -1,22 +1,27 @@
 package com.example.configuration;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.StepContribution;
-import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.job.flow.JobExecutionDecider;
-import org.springframework.batch.core.scope.context.ChunkContext;
-import org.springframework.batch.core.step.tasklet.Tasklet;
-import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.file.mapping.DefaultLineMapper;
+import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 
-import com.example.decider.MyJobExecutionDecider;
-import com.example.listener.MyStepExecutionListener;
+import com.example.domain.Product;
+import com.example.domain.ProductFieldMapper;
+import com.example.reader.ProductNameItemReader;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,81 +36,54 @@ public class BatchConfiguration {
 	@Autowired
 	public StepBuilderFactory stepBiulderFactory;
 	
+	
+
 	@Bean
-	public JobExecutionDecider decider() {
-		return new MyJobExecutionDecider();
+	public ItemReader<Product> flatFileItemReader() {
+		FlatFileItemReader<Product> itemReader = new FlatFileItemReader<>();
+
+		itemReader.setLinesToSkip(1);
+		itemReader.setResource(new ClassPathResource("/Product_Details.csv"));
+
+		DefaultLineMapper<Product> lineMapper = new DefaultLineMapper<>();
+
+		DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
+
+		lineTokenizer.setNames("product_id", "product_name", "product_category", "product_price");
+
+		lineMapper.setLineTokenizer(lineTokenizer);
+		lineMapper.setFieldSetMapper(new ProductFieldMapper());
+		itemReader.setLineMapper(lineMapper);
+
+		return itemReader;
+
 	}
 	
-	@Bean 
-	public StepExecutionListener mystepExecutionListener() {
-		return new MyStepExecutionListener();
-	}
+	
+	
 	
 	@Bean 
 	public Step step1() {
-		return this.stepBiulderFactory.get("step1").tasklet(new Tasklet(){
-			@Override
-			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				log.info("step1 executed!!");
-				return RepeatStatus.FINISHED;
-			}
-		}).build();
+		return this.stepBiulderFactory.get("chunkBasedStep1").<Product,Product>chunk(3)
+				.reader(flatFileItemReader())
+				.writer(new ItemWriter<Product>() {
+
+					@Override
+					public void write(List<? extends Product > items) throws Exception {
+						log.info("Chunk processing started");
+						for (Product item : items) {
+							log.info(item.toString());
+							
+						}
+					//items.forEach(System.out::println);
+				}}).build();		
 	}
 	
-	@Bean 
-	public Step step2() {
-		return this.stepBiulderFactory.get("step2").tasklet(new Tasklet(){
-			@Override
-			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				boolean fail= false;
-				if(fail) {
-				 throw new Exception("Test Exception");			
-				}	
-				log.info("step2 executed!!");
-				return RepeatStatus.FINISHED;
-			}
-		}).build();
-	}
 	
 	@Bean 
-	public Step step3() {
-		return this.stepBiulderFactory.get("step3").tasklet(new Tasklet(){
-			@Override
-			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				log.info("step3 executed!!");
-				return RepeatStatus.FINISHED;
-			}
-		}).build();
-	}
-	
-	@Bean 
-	public Step step4() {
-		return this.stepBiulderFactory.get("step4").tasklet(new Tasklet(){
-			@Override
-			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				log.info("step4 executed!!");
-				return RepeatStatus.FINISHED;
-			}
-		}).build();
-	}
-	
-	@Bean 
-	public Job firstJob() {
-		
-		
-		
-		return this.jobBiulderFactory.get("job1")
-		.start(step1()).on("COMPLETED").to(decider())
-										.on("TEST_STATUS").to(step2())
-										.from(decider())
-										 .on("*").to(step3())
-									 
-										 
-										 
-		
-		
-		//.from(step2()).on("*").to(step4()) EN CASO DE CUALQUIER OTRO ESTATUS A PARTE DE COMPLETADO VE AL STEP4
-		.end()
+	public Job firstJob() {			
+		return this.jobBiulderFactory.get("job2")
+		.start(step1())
 		.build();
 	}
 	
