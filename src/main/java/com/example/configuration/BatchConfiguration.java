@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.sql.DataSource;
+
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -11,6 +13,7 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
@@ -21,6 +24,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import com.example.domain.Product;
 import com.example.domain.ProductFieldMapper;
+import com.example.domain.ProductRowMapper;
 import com.example.reader.ProductNameItemReader;
 
 import lombok.extern.slf4j.Slf4j;
@@ -36,36 +40,25 @@ public class BatchConfiguration {
 	@Autowired
 	public StepBuilderFactory stepBiulderFactory;
 	
+	@Autowired
+	public DataSource dataSource;
+
 	
-
-	@Bean
-	public ItemReader<Product> flatFileItemReader() {
-		FlatFileItemReader<Product> itemReader = new FlatFileItemReader<>();
-
-		itemReader.setLinesToSkip(1);
-		itemReader.setResource(new ClassPathResource("/Product_Details.csv"));
-
-		DefaultLineMapper<Product> lineMapper = new DefaultLineMapper<>();
-
-		DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
-
-		lineTokenizer.setNames("product_id", "product_name", "product_category", "product_price");
-
-		lineMapper.setLineTokenizer(lineTokenizer);
-		lineMapper.setFieldSetMapper(new ProductFieldMapper());
-		itemReader.setLineMapper(lineMapper);
-
+	@Bean 
+	public ItemReader<Product> jdbcCursorItemReader(){
+		JdbcCursorItemReader<Product> itemReader = new JdbcCursorItemReader<>();
+		itemReader.setDataSource(dataSource);
+		itemReader.setSql("SELECT * FROM product_details order by product_id");
+		itemReader.setRowMapper(new ProductRowMapper());
 		return itemReader;
-
 	}
-	
 	
 	
 	
 	@Bean 
 	public Step step1() {
 		return this.stepBiulderFactory.get("chunkBasedStep1").<Product,Product>chunk(3)
-				.reader(flatFileItemReader())
+				.reader(jdbcCursorItemReader())
 				.writer(new ItemWriter<Product>() {
 
 					@Override
