@@ -14,6 +14,8 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
@@ -53,12 +55,32 @@ public class BatchConfiguration {
 		return itemReader;
 	}
 	
+	@Bean
+	public ItemReader<Product>jdbcPagingItemReader() throws Exception{
+		JdbcPagingItemReader<Product> itemReader = new JdbcPagingItemReader<>();
+		itemReader.setDataSource(dataSource);
+		
+		SqlPagingQueryProviderFactoryBean factory = new SqlPagingQueryProviderFactoryBean();
+		factory.setDataSource(dataSource);
+		factory.setSelectClause("select product_id, product_name, product_category, product_price");
+		factory.setFromClause("from product_details");
+		factory.setSortKey("product_id");
+		
+		
+		itemReader.setQueryProvider(factory.getObject());
+		itemReader.setRowMapper(new ProductRowMapper());
+		itemReader.setPageSize(3);
+		
+		
+		return itemReader;
+	}
+	
 	
 	
 	@Bean 
-	public Step step1() {
+	public Step step1() throws Exception {
 		return this.stepBiulderFactory.get("chunkBasedStep1").<Product,Product>chunk(3)
-				.reader(jdbcCursorItemReader())
+				.reader(jdbcPagingItemReader())
 				.writer(new ItemWriter<Product>() {
 
 					@Override
@@ -74,7 +96,7 @@ public class BatchConfiguration {
 	
 	
 	@Bean 
-	public Job firstJob() {			
+	public Job firstJob() throws Exception {			
 		return this.jobBiulderFactory.get("job2")
 		.start(step1())
 		.build();

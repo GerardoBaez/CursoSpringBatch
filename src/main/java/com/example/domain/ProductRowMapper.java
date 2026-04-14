@@ -9,6 +9,7 @@ public class ProductRowMapper implements RowMapper<Product> {
 
 	@Override
 	public Product mapRow(ResultSet rs, int rowNum) throws SQLException {
+		System.out.println("ResulSet: " + rs);
 		Product product = new Product();
 		product.setProductId(rs.getInt("product_id"));
 		product.setName(rs.getString("product_name"));
