@@ -13,6 +13,8 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
+import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
@@ -30,6 +32,7 @@ import org.springframework.core.io.FileSystemResource;
 
 import com.example.domain.Product;
 import com.example.domain.ProductFieldMapper;
+import com.example.domain.ProductItemPreparedStatementSetter;
 import com.example.domain.ProductRowMapper;
 import com.example.reader.ProductNameItemReader;
 
@@ -50,6 +53,20 @@ public class BatchConfiguration {
 	public DataSource dataSource;
 
 	
+	@Bean
+	public JdbcBatchItemWriter<Product> jdbcBatchItemWriter(){
+		JdbcBatchItemWriter<Product> itemWriter= new JdbcBatchItemWriter<Product>();
+		itemWriter.setDataSource(dataSource);
+		itemWriter.setSql("insert into product_details_output values (:productId,:name,:productCategory,:price)");
+		itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider());
+		
+		//itemWriter.setSql("insert into product_details_output values (?,?,?,?)");
+		//itemWriter.setItemPreparedStatementSetter(new ProductItemPreparedStatementSetter());
+		return itemWriter;
+	}
+	
+	
+	@Bean
 	public ItemWriter<Product> flatFileItemWriter(){
 		FlatFileItemWriter<Product> itemWriter = new FlatFileItemWriter<>();
 		itemWriter.setResource(new FileSystemResource("output/Product_Details_Output.csv"));
@@ -101,7 +118,7 @@ public class BatchConfiguration {
 	public Step step1() throws Exception {
 		return this.stepBiulderFactory.get("chunkBasedStep1").<Product,Product>chunk(3)
 				.reader(jdbcPagingItemReader())
-				.writer(flatFileItemWriter()).build();		
+				.writer(jdbcBatchItemWriter()).build();		
 	}
 	
 	
