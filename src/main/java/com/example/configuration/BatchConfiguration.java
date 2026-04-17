@@ -11,6 +11,7 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
@@ -34,6 +35,7 @@ import com.example.domain.Product;
 import com.example.domain.ProductFieldMapper;
 import com.example.domain.ProductItemPreparedStatementSetter;
 import com.example.domain.ProductRowMapper;
+import com.example.proccessor.MyProductItemProcessor;
 import com.example.reader.ProductNameItemReader;
 
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +54,10 @@ public class BatchConfiguration {
 	@Autowired
 	public DataSource dataSource;
 
+	@Bean
+	public ItemProcessor<Product, Product> myProductItemProcessor(){
+		return new MyProductItemProcessor();
+	}
 	
 	@Bean
 	public JdbcBatchItemWriter<Product> jdbcBatchItemWriter(){
@@ -118,7 +124,9 @@ public class BatchConfiguration {
 	public Step step1() throws Exception {
 		return this.stepBiulderFactory.get("chunkBasedStep1").<Product,Product>chunk(3)
 				.reader(jdbcPagingItemReader())
-				.writer(jdbcBatchItemWriter()).build();		
+				.processor(myProductItemProcessor())
+				.writer(jdbcBatchItemWriter()).build();
+		
 	}
 	
 	
