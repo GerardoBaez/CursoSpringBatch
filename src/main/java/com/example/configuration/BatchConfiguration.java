@@ -25,17 +25,23 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.support.CompositeItemProcessor;
+import org.springframework.batch.item.validator.BeanValidatingItemProcessor;
+import org.springframework.batch.item.validator.ValidatingItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 
+import com.example.domain.FilterProductItemProcessor;
+import com.example.domain.OSProduct;
 import com.example.domain.Product;
 import com.example.domain.ProductFieldMapper;
 import com.example.domain.ProductItemPreparedStatementSetter;
 import com.example.domain.ProductRowMapper;
-import com.example.proccessor.MyProductItemProcessor;
+import com.example.domain.ProductValidator;
+import com.example.proccessor.TransformProductItemProcessor;
 import com.example.reader.ProductNameItemReader;
 
 import lombok.extern.slf4j.Slf4j;
@@ -55,22 +61,36 @@ public class BatchConfiguration {
 	public DataSource dataSource;
 
 	@Bean
-	public ItemProcessor<Product, Product> myProductItemProcessor(){
-		return new MyProductItemProcessor();
+	public ItemProcessor<Product, OSProduct> transformProductItemProcessor(){
+		return new TransformProductItemProcessor();
 	}
+	
 	
 	@Bean
 	public JdbcBatchItemWriter<Product> jdbcBatchItemWriter(){
 		JdbcBatchItemWriter<Product> itemWriter= new JdbcBatchItemWriter<Product>();
 		itemWriter.setDataSource(dataSource);
-		itemWriter.setSql("insert into product_details_output values (:productId,:name,:productCategory,:price)");
+		itemWriter.setSql("insert into OS_PRODUCT_DETAILS values (:productId,:name,:productCategory,:price,:taxPercent,:sku,:shippingRate)");
+		itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider());
+		
+	
+		return itemWriter;
+	}
+	
+	
+	/**
+	@Bean
+	public JdbcBatchItemWriter<Product> jdbcBatchItemWriter(){
+		JdbcBatchItemWriter<Product> itemWriter= new JdbcBatchItemWriter<Product>();
+		itemWriter.setDataSource(dataSource);
+		itemWriter.setSql("insert into PRODUCT_DETAILS_OUTPUT values (:productId,:name,:productCategory,:price)");
 		itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider());
 		
 		//itemWriter.setSql("insert into product_details_output values (?,?,?,?)");
 		//itemWriter.setItemPreparedStatementSetter(new ProductItemPreparedStatementSetter());
 		return itemWriter;
 	}
-	
+	**/
 	
 	@Bean
 	public ItemWriter<Product> flatFileItemWriter(){
@@ -118,13 +138,40 @@ public class BatchConfiguration {
 		return itemReader;
 	}
 	
+	/**
+	@Bean
+	public ValidatingItemProcessor<Product> validateProductItemProcessor(){
+		ValidatingItemProcessor<Product> validatingProductItemProcessor = new ValidatingItemProcessor<>(new ProductValidator());
+		//validatingProductItemProcessor.setFilter(true);
+		return validatingProductItemProcessor;
+	}
+	*/
+	
+	@Bean 
+	public CompositeItemProcessor<Product, OSProduct>itemProcessor(){
+		CompositeItemProcessor<Product, OSProduct> itemProcessor = new CompositeItemProcessor();
+		List itemProcessors = new ArrayList();
+		itemProcessors.add(validateProductItemProcessor());
+		itemProcessors.add(filterProductItemProcessor());
+		itemProcessors.add(transformProductItemProcessor());
+		itemProcessor.setDelegates(itemProcessors);
+		return itemProcessor;
+	}
+	
+	@Bean
+	public BeanValidatingItemProcessor<Product> validateProductItemProcessor(){
+		BeanValidatingItemProcessor<Product> beanValidatingProductItemProcessor = new BeanValidatingItemProcessor<>();
+		beanValidatingProductItemProcessor.setFilter(true);
+		//validatingProductItemProcessor.setFilter(true);
+		return beanValidatingProductItemProcessor;
+	}
 	
 	
 	@Bean 
 	public Step step1() throws Exception {
 		return this.stepBiulderFactory.get("chunkBasedStep1").<Product,Product>chunk(3)
 				.reader(jdbcPagingItemReader())
-				.processor(myProductItemProcessor())
+				.processor(itemProcessor())
 				.writer(jdbcBatchItemWriter()).build();
 		
 	}
@@ -135,6 +182,12 @@ public class BatchConfiguration {
 		return this.jobBiulderFactory.get("job2")
 		.start(step1())
 		.build();
+	}
+	
+	
+	@Bean 
+	public ItemProcessor<Product, Product>filterProductItemProcessor(){
+		return new FilterProductItemProcessor();
 	}
 	
 	
