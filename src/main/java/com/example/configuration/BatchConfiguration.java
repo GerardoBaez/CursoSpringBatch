@@ -5,8 +5,6 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.flow.Flow;
@@ -16,12 +14,10 @@ import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionManager;
-
 import com.example.decider.MyJobExecutionDecider;
 import com.example.listener.MyStepExecutionListener;
 
@@ -77,7 +73,7 @@ public class BatchConfiguration {
 		return new StepBuilder("step3",jobrep).tasklet(new Tasklet(){
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				log.info("step3 executed!!");
+				log.info("step3 executed on thread:"+ Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
 		}, tx).build();
@@ -88,7 +84,7 @@ public class BatchConfiguration {
 		return new StepBuilder("step4",jobrep).tasklet(new Tasklet(){
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				log.info("step4 executed!!");
+				log.info("step4 executed on thread:"+ Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
 		}, tx).build();
@@ -99,7 +95,7 @@ public class BatchConfiguration {
 		return new StepBuilder("step5",jobrep).tasklet(new Tasklet(){
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				log.info("step5 executed!!");
+				log.info("step5 executed on thread:"+ Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
 		}, tx).build();
@@ -110,7 +106,7 @@ public class BatchConfiguration {
 		return new StepBuilder("step6",jobrep).tasklet(new Tasklet(){
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				log.info("step6 executed!!");
+				log.info("step6 executed on thread:"+ Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
 		}, tx).build();
@@ -129,9 +125,18 @@ public class BatchConfiguration {
 		flowBuilder.start(step3)
 					.next(step4)
 					.end();
-		
 		return flowBuilder.build();
 	}
+	
+	@Bean
+	public Flow flow2(Step step5, Step step6) {
+		FlowBuilder<Flow> flowBuilder= new FlowBuilder<>("flow2");
+		flowBuilder.start(step5)
+					.next(step6)
+					.end();
+		return flowBuilder.build();
+	}
+	
 	
 	@Bean 
 	public Job job1(JobRepository jobrep,Step step1, Step step2, Flow flow1) {
@@ -144,10 +149,11 @@ public class BatchConfiguration {
 	}
 	
 	@Bean 
-	public Job job2(JobRepository jobrep, Step job3step, Flow flow1) {		
+	public Job job2(JobRepository jobrep, Step job3step, Flow flow1, Flow flow2) {		
 		return new JobBuilder("job2",jobrep)
 		.start(flow1)
-		.next(job3step)
+		.split(new SimpleAsyncTaskExecutor())
+		.add(flow2)
 		.end()
 		.build();
 	}
