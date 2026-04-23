@@ -116,6 +116,10 @@ public class BatchConfiguration {
 		}, tx).build();
 	}
 	
+	@Bean
+	public Step job3step(JobRepository jobrep, Job job3) {
+		return new StepBuilder("job3step",jobrep).job(job3).build();
+	}
 	
 	
 	
@@ -140,12 +144,20 @@ public class BatchConfiguration {
 	}
 	
 	@Bean 
-	public Job job2(JobRepository jobrep,Step step5, Step step6, Flow flow1) {		
+	public Job job2(JobRepository jobrep, Step job3step, Flow flow1) {		
 		return new JobBuilder("job2",jobrep)
 		.start(flow1)
-		.next(step5)
-		.next(step6)
+		.next(job3step)
 		.end()
+		.build();
+	}
+	
+	
+	@Bean 
+	public Job job3(JobRepository jobrep,Step step5, Step step6, Flow flow1) {		
+		return new JobBuilder("job3",jobrep)
+		.start(step5)
+		.next(step6)
 		.build();
 	}
 	
