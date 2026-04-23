@@ -7,7 +7,9 @@ import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.job.flow.JobExecutionDecider;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.scope.context.ChunkContext;
@@ -92,22 +94,23 @@ public class BatchConfiguration {
 		}, tx).build();
 	}
 	
+	@Bean
+	public Flow flow1(Step step3, Step step4) {
+		FlowBuilder<Flow> flowBuilder= new FlowBuilder<>("flow1");
+		flowBuilder.start(step3)
+					.next(step4)
+					.end();
+		
+		return flowBuilder.build();
+	}
+	
 	@Bean 
-	public Job firstJob(JobRepository jobrep,Step step1, Step step2, Step step3, Step step4 ) {
-		
-		
-		
+	public Job firstJob(JobRepository jobrep,Step step1, Step step2, Flow flow1) {
+			
 		return new JobBuilder("job1",jobrep)
-		.start(step1).on("COMPLETED").to(decider())
-										.on("TEST_STATUS").to(step2)
-					  .from(decider())
-										 .on("*").to(step3)
-									 
-										 
-										 
-		
-		
-		//.from(step2()).on("*").to(step4()) EN CASO DE CUALQUIER OTRO ESTATUS A PARTE DE COMPLETADO VE AL STEP4
+		.start(step1)
+		.next(step2)
+		.on("COMPLETED").to(flow1)
 		.end()
 		.build();
 	}
