@@ -2,6 +2,7 @@ package com.example.domain;
 
 
 
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;

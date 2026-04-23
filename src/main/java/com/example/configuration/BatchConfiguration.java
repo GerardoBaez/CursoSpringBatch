@@ -41,12 +41,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import com.example.domain.FilterProductItemProcessor;
 import com.example.domain.OSProduct;
 import com.example.domain.Product;
-import com.example.domain.ProductFieldMapper;
-import com.example.domain.ProductItemPreparedStatementSetter;
 import com.example.domain.ProductRowMapper;
-import com.example.domain.ProductValidator;
 import com.example.proccessor.TransformProductItemProcessor;
-import com.example.reader.ProductNameItemReader;
 
 import lombok.extern.slf4j.Slf4j;
 
