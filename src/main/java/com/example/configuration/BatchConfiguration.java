@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import com.example.decider.MyJobExecutionDecider;
+import com.example.listener.MyJobExecutionListener;
 import com.example.listener.MyStepExecutionListener;
 
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,12 @@ public class BatchConfiguration {
 	@Bean 
 	public StepExecutionListener mystepExecutionListener() {
 		return new MyStepExecutionListener();
+	}
+	
+	
+	@Bean 
+	public MyJobExecutionListener myjobexecutionListener() {
+		return new MyJobExecutionListener();
 	}
 	
 	@Bean 
@@ -194,6 +201,7 @@ public class BatchConfiguration {
 	@Bean 
 	public Job job2(JobRepository jobrep ,Flow splitFlow) {		
 		return new JobBuilder("job2",jobrep)
+		.listener(myjobexecutionListener())
 		.start(splitFlow)
 		.end()
 		.build();
