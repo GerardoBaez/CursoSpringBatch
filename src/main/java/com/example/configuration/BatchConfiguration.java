@@ -42,6 +42,7 @@ import com.example.domain.FilterProductItemProcessor;
 import com.example.domain.OSProduct;
 import com.example.domain.Product;
 import com.example.domain.ProductRowMapper;
+import com.example.listener.MyChunkListener;
 import com.example.proccessor.TransformProductItemProcessor;
 
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +59,12 @@ public class BatchConfiguration {
 	@Bean
 	public ItemProcessor<Product, OSProduct> transformProductItemProcessor(){
 		return new TransformProductItemProcessor();
+	}
+	
+	
+	@Bean 
+	public MyChunkListener mychunkListener() {
+		return new MyChunkListener();
 	}
 	
 	
@@ -164,7 +171,7 @@ public class BatchConfiguration {
 	
 	@Bean 
 	public Step step1(JobRepository jobrepo, PlatformTransactionManager tx) throws Exception {
-		return new StepBuilder("chunkBasedStep1",jobrepo).<Product,Product>chunk(3,tx)
+		return new StepBuilder("chunkBasedStep1",jobrepo).<Product,Product>chunk(3,tx).listener(mychunkListener())
 				.reader(jdbcPagingItemReader())
 				.processor(itemProcessor())
 				.writer(jdbcBatchItemWriter()).build();
@@ -173,9 +180,9 @@ public class BatchConfiguration {
 	
 	
 	@Bean 
-	public Job firstJob(JobRepository jobrepo, PlatformTransactionManager tx) throws Exception {			
+	public Job firstJob(JobRepository jobrepo, Step step1 ) throws Exception {			
 		return new JobBuilder("job2",jobrepo)
-		.start(step1(jobrepo,tx))
+		.start(step1)
 		.build();
 	}
 	
