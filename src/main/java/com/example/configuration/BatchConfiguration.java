@@ -112,6 +112,30 @@ public class BatchConfiguration {
 		}, tx).build();
 	}
 	
+	
+	@Bean 
+	public Step step7(JobRepository jobrep, PlatformTransactionManager tx) {
+		return new StepBuilder("step7",jobrep).tasklet(new Tasklet(){
+			@Override
+			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+				log.info("step7 executed on thread:"+ Thread.currentThread().getName());
+				return RepeatStatus.FINISHED;
+			}
+		}, tx).build();
+	}
+	
+	@Bean 
+	public Step step8(JobRepository jobrep, PlatformTransactionManager tx) {
+		return new StepBuilder("step8",jobrep).tasklet(new Tasklet(){
+			@Override
+			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+				log.info("step8 executed on thread:"+ Thread.currentThread().getName());
+				return RepeatStatus.FINISHED;
+			}
+		}, tx).build();
+	}
+	
+	
 	@Bean
 	public Step job3step(JobRepository jobrep, Job job3) {
 		return new StepBuilder("job3step",jobrep).job(job3).build();
@@ -137,6 +161,25 @@ public class BatchConfiguration {
 		return flowBuilder.build();
 	}
 	
+	@Bean
+	public Flow flow3(Step step7, Step step8) {
+		FlowBuilder<Flow> flowBuilder= new FlowBuilder<>("flow3");
+		flowBuilder.start(step7)
+					.next(step8)
+					.end();
+		return flowBuilder.build();
+	}
+	
+	
+	@Bean 
+	public Flow splitFlow(Flow flow1, Flow flow2, Flow flow3) {
+		FlowBuilder<Flow> flowBuilder= new FlowBuilder<>("splitflow");
+		
+		flowBuilder.split(new SimpleAsyncTaskExecutor()).add(flow1,flow2,flow3);
+		
+		return flowBuilder.build();
+	}
+	
 	
 	@Bean 
 	public Job job1(JobRepository jobrep,Step step1, Step step2, Flow flow1) {
@@ -149,11 +192,9 @@ public class BatchConfiguration {
 	}
 	
 	@Bean 
-	public Job job2(JobRepository jobrep, Step job3step, Flow flow1, Flow flow2) {		
+	public Job job2(JobRepository jobrep ,Flow splitFlow) {		
 		return new JobBuilder("job2",jobrep)
-		.start(flow1)
-		.split(new SimpleAsyncTaskExecutor())
-		.add(flow2)
+		.start(splitFlow)
 		.end()
 		.build();
 	}
