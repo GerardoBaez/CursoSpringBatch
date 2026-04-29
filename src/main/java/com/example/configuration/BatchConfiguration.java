@@ -43,6 +43,9 @@ import com.example.domain.OSProduct;
 import com.example.domain.Product;
 import com.example.domain.ProductRowMapper;
 import com.example.listener.MyChunkListener;
+import com.example.listener.MyItemProcessListener;
+import com.example.listener.MyItemReadListener;
+import com.example.listener.MyItemWriteListener;
 import com.example.proccessor.TransformProductItemProcessor;
 
 import lombok.extern.slf4j.Slf4j;
@@ -69,8 +72,23 @@ public class BatchConfiguration {
 	
 	
 	@Bean
-	public JdbcBatchItemWriter<Product> jdbcBatchItemWriter(){
-		JdbcBatchItemWriter<Product> itemWriter= new JdbcBatchItemWriter<Product>();
+	public MyItemProcessListener myprocesslistener() {
+		return new MyItemProcessListener();
+	}
+	
+	@Bean
+	public MyItemReadListener myreadlistener() {
+		return new MyItemReadListener();
+	}
+	
+	@Bean
+	public MyItemWriteListener mywritelistener() {
+		return new MyItemWriteListener();
+	}
+	
+	@Bean
+	public JdbcBatchItemWriter<OSProduct> jdbcBatchItemWriter(){
+		JdbcBatchItemWriter<OSProduct> itemWriter= new JdbcBatchItemWriter<OSProduct>();
 		itemWriter.setDataSource(dataSource);
 		itemWriter.setSql("insert into OS_PRODUCT_DETAILS values (:productId,:name,:productCategory,:price,:taxPercent,:sku,:shippingRate)");
 		itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider());
@@ -171,7 +189,11 @@ public class BatchConfiguration {
 	
 	@Bean 
 	public Step step1(JobRepository jobrepo, PlatformTransactionManager tx) throws Exception {
-		return new StepBuilder("chunkBasedStep1",jobrepo).<Product,Product>chunk(3,tx).listener(mychunkListener())
+		return new StepBuilder("chunkBasedStep1",jobrepo).<Product,OSProduct>chunk(3,tx)
+				.listener(mychunkListener())
+				.listener(myprocesslistener())
+				.listener(myreadlistener())
+				.listener(mywritelistener())
 				.reader(jdbcPagingItemReader())
 				.processor(itemProcessor())
 				.writer(jdbcBatchItemWriter()).build();

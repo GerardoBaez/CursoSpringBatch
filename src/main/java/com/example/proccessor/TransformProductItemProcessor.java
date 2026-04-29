@@ -21,10 +21,11 @@ public class TransformProductItemProcessor implements ItemProcessor<Product, OSP
 		osProduct.setSku(item.getProductCategory().substring(0,3)+item.getProductId());		
 		osProduct.setShippingRate(item.getPrice()< 1000 ? 75:0);
 		
+		/**
 		if(item.getPrice()>500) {
 			throw new Exception("Test Exception");
 		}
-		
+		**/
 		return osProduct;
 	}
 
