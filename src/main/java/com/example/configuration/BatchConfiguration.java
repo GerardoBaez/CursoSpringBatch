@@ -9,10 +9,12 @@ import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.job.flow.JobExecutionDecider;
+import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
+import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,9 +54,13 @@ public class BatchConfiguration {
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 				log.info("step1 executed!!");
+				ExecutionContext jobExecutionContext = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext();	
+				log.info("Job Execution Context:{}", jobExecutionContext);
+				ExecutionContext stepExecutionContext= chunkContext.getStepContext().getStepExecution().getExecutionContext();	
+				stepExecutionContext.put("sk1", "ABC");
 				return RepeatStatus.FINISHED;
 			}
-		},tx).build();
+		},tx).listener(promotionListener()).build();
 	}
 	
 	
@@ -70,9 +76,22 @@ public class BatchConfiguration {
 				 throw new Exception("Test Exception");			
 				}	
 				log.info("step2 executed!!");
+				ExecutionContext jobExecutionContext = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext();
+				//jobExecutionContext.put("sk1", "ABC");
+				log.info("Job Execution Context:{}", jobExecutionContext);
+				ExecutionContext stepExecutionContext= chunkContext.getStepContext().getStepExecution().getExecutionContext();
+				stepExecutionContext.put("sk2", "KLM");
+			
 				return RepeatStatus.FINISHED;
 			}
-		},tx).build();
+		},tx).listener(promotionListener()) .build();
+	}
+	
+	@Bean
+	public StepExecutionListener promotionListener() {
+		ExecutionContextPromotionListener promotionListener = new ExecutionContextPromotionListener();
+		promotionListener.setKeys(new String[] {"sk1","sk2"});
+		return promotionListener;
 	}
 	
 	@Bean 
@@ -81,6 +100,9 @@ public class BatchConfiguration {
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 				log.info("step3 executed on thread:"+ Thread.currentThread().getName());
+				ExecutionContext jobExecutionContext = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext();
+				//jobExecutionContext.put("sk3", "KLm");
+				log.info("Job Execution Context:{}", jobExecutionContext);
 				return RepeatStatus.FINISHED;
 			}
 		}, tx).listener(mystepExecutionListener()).build();
@@ -92,6 +114,7 @@ public class BatchConfiguration {
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 				log.info("step4 executed on thread:"+ Thread.currentThread().getName());
+				
 				return RepeatStatus.FINISHED;
 			}
 		}, tx).build();
@@ -189,12 +212,12 @@ public class BatchConfiguration {
 	
 	
 	@Bean 
-	public Job job1(JobRepository jobrep,Step step1, Step step2, Flow flow1) {
+	public Job job1(JobRepository jobrep,Step step1, Step step2, Step step3) {
 		return new JobBuilder("job1",jobrep)
 		.start(step1)
+		.listener(myjobexecutionListener())
 		.next(step2)
-		.on("COMPLETED").to(flow1)
-		.end()
+		.next(step3)
 		.build();
 	}
 	
