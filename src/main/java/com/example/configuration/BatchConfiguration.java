@@ -80,7 +80,7 @@ public class BatchConfiguration {
 				//jobExecutionContext.put("sk1", "ABC");
 				log.info("Job Execution Context:{}", jobExecutionContext);
 				ExecutionContext stepExecutionContext= chunkContext.getStepContext().getStepExecution().getExecutionContext();
-				stepExecutionContext.put("sk2", "KLM");
+				stepExecutionContext.put("sk2", "TUV");
 			
 				return RepeatStatus.FINISHED;
 			}
@@ -212,12 +212,18 @@ public class BatchConfiguration {
 	
 	
 	@Bean 
-	public Job job1(JobRepository jobrep,Step step1, Step step2, Step step3) {
+	public Job job1(JobRepository jobrep,Step step1, Step step2, Step step3, Step step4 , Step step5) {
 		return new JobBuilder("job1",jobrep)
 		.start(step1)
 		.listener(myjobexecutionListener())
 		.next(step2)
-		.next(step3)
+		.next(decider())
+			.on("STEP3").to(step3)
+		.from(decider())
+			.on("STEP4").to(step4)
+		.from(decider())
+			.on("STEP5").to(step5)
+		.end()
 		.build();
 	}
 	
