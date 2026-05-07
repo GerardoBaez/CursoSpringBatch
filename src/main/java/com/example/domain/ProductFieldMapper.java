@@ -11,8 +11,8 @@ public class ProductFieldMapper implements FieldSetMapper<Product> {
 		Product product = new Product();
 		product.setProductId(fieldSet.readInt("product_id"));
 		product.setName(fieldSet.readString("product_name"));
-		product.setName(fieldSet.readString("product_category"));
-		product.setProductId(fieldSet.readInt("product_price"));
+		product.setProductCategory(fieldSet.readString("product_category"));
+		product.setPrice(fieldSet.readInt("product_price"));
 		return product;
 	}
 	

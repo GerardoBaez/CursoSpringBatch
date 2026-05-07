@@ -5,6 +5,7 @@ import java.io.IOException;
 
 import org.springframework.batch.core.SkipListener;
 import org.springframework.batch.item.file.FlatFileParseException;
+import org.springframework.stereotype.Component;
 
 import com.example.domain.OSProduct;
 import com.example.domain.Product;

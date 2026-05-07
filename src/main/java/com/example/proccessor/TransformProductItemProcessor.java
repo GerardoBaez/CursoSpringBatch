@@ -10,7 +10,7 @@ public class TransformProductItemProcessor implements ItemProcessor<Product, OSP
 	@Override
 	public OSProduct process(Product item) throws Exception {
 		// TODO Auto-generated method stub
-		System.out.println("transformprocces executed!!");
+		System.out.println("transformprocces executed for item "+ item);
 		OSProduct osProduct = new OSProduct();
 		
 		osProduct.setName(item.getName());

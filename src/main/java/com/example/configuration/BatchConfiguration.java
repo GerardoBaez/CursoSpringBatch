@@ -24,6 +24,7 @@ import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
+import org.springframework.batch.item.file.FlatFileParseException;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
@@ -31,6 +32,7 @@ import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.batch.item.support.CompositeItemProcessor;
 import org.springframework.batch.item.validator.BeanValidatingItemProcessor;
 import org.springframework.batch.item.validator.ValidatingItemProcessor;
+import org.springframework.batch.item.validator.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,12 +43,16 @@ import org.springframework.transaction.PlatformTransactionManager;
 import com.example.domain.FilterProductItemProcessor;
 import com.example.domain.OSProduct;
 import com.example.domain.Product;
+import com.example.domain.ProductFieldMapper;
 import com.example.domain.ProductRowMapper;
+import com.example.exception.MyException;
 import com.example.listener.MyChunkListener;
 import com.example.listener.MyItemProcessListener;
 import com.example.listener.MyItemReadListener;
 import com.example.listener.MyItemWriteListener;
+import com.example.listener.MySkipListener;
 import com.example.proccessor.TransformProductItemProcessor;
+import com.example.skippolicy.MySkipPolicy;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,10 +87,27 @@ public class BatchConfiguration {
 		return new MyItemReadListener();
 	}
 	
-	@Bean
+	@Bean 
 	public MyItemWriteListener mywritelistener() {
 		return new MyItemWriteListener();
 	}
+	
+	
+	
+	
+	@Bean
+	public MySkipListener mySkipListener() {
+		 return new MySkipListener();
+	}
+	
+	
+	
+	@Bean 
+	public MySkipPolicy mySkipPolicy() {
+		return new MySkipPolicy();
+	}
+	
+	
 	
 	@Bean
 	public JdbcBatchItemWriter<OSProduct> jdbcBatchItemWriter(){
@@ -111,6 +134,27 @@ public class BatchConfiguration {
 		return itemWriter;
 	}
 	**/
+	
+	@Bean
+	public ItemReader<Product> flatFileItemReader() {
+		FlatFileItemReader<Product> itemReader = new FlatFileItemReader<>();
+		itemReader.setLinesToSkip(1);
+		itemReader.setResource(new ClassPathResource("/Product_Details.csv"));
+
+		DefaultLineMapper<Product> lineMapper = new DefaultLineMapper<>();
+
+		DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
+		lineTokenizer.setNames("product_id", "product_name", "product_category", "product_price");
+
+		lineMapper.setLineTokenizer(lineTokenizer);
+		lineMapper.setFieldSetMapper(new ProductFieldMapper());
+
+		itemReader.setLineMapper(lineMapper);
+
+		return itemReader;
+	}
+
+	
 	
 	@Bean
 	public ItemWriter<Product> flatFileItemWriter(){
@@ -181,7 +225,7 @@ public class BatchConfiguration {
 	@Bean
 	public BeanValidatingItemProcessor<Product> validateProductItemProcessor(){
 		BeanValidatingItemProcessor<Product> beanValidatingProductItemProcessor = new BeanValidatingItemProcessor<>();
-		beanValidatingProductItemProcessor.setFilter(true);
+		//beanValidatingProductItemProcessor.setFilter(true);
 		//validatingProductItemProcessor.setFilter(true);
 		return beanValidatingProductItemProcessor;
 	}
@@ -190,13 +234,17 @@ public class BatchConfiguration {
 	@Bean 
 	public Step step1(JobRepository jobrepo, PlatformTransactionManager tx) throws Exception {
 		return new StepBuilder("chunkBasedStep1",jobrepo).<Product,OSProduct>chunk(3,tx)
-				.listener(mychunkListener())
-				.listener(myprocesslistener())
-				.listener(myreadlistener())
-				.listener(mywritelistener())
-				.reader(jdbcPagingItemReader())
+				
+				.reader(flatFileItemReader())
 				.processor(itemProcessor())
-				.writer(jdbcBatchItemWriter()).build();
+				.writer(jdbcBatchItemWriter())
+				.faultTolerant()
+				.retry(MyException.class)
+				.retryLimit(4)
+				.skipPolicy(mySkipPolicy())
+				.listener(mySkipListener())
+				.listener(mychunkListener())
+				.build();
 		
 	}
 	

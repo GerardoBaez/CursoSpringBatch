@@ -1,0 +1,36 @@
+2,iPad Mini,Tablets,800,
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
+2,iPad Mini,Tablets,800,
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
+2,iPad Mini,Tablets,800,
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
+2,iPad Mini,Tablets,800,
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
+2,iPad Mini,Tablets,800,
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
+2,iPad Mini,Tablets
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
+2,iPad Mini,Tablets
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
+2,iPad Mini,Tablets
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
+2,iPad Mini,Tablets
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
+2,iPad Mini,Tablets
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
+2,iPad Mini,Tablets
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
+2,iPad Mini,Tablets
+Product(productId=6, name=Samsung Galaxy S24, productCategory=Mobile Phones, price=-200)
+Product(productId=7, name=Sony Bravia, productCategory=Televisions, price=-750)
